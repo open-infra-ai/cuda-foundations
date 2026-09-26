@@ -4,7 +4,15 @@
   "scripts": {
     "docs:dev": "cd docs && npm install && npm run dev",
     "docs:build": "cd docs && npm install && npm run build",
-    "docs:preview": "cd docs && npm run preview"
+    "docs:preview": "cd docs && npm run preview",
+    "verify-agent-note-tree": "npx tsx scripts/verify-agent-note-tree.ts",
+    "verify-agent-note-format": "npx tsx scripts/verify-agent-note-format.ts",
+    "verify-archived": "npx tsx scripts/verify-archived-agent-notes.ts",
+    "verify-notes": "npx tsx scripts/verify-agent-note-tree.ts && npx tsx scripts/verify-agent-note-format.ts && npx tsx scripts/verify-archived-agent-notes.ts",
+    "archive-agent-note": "npx tsx scripts/archive-agent-note.ts",
+    "check-anchors": "npx tsx scripts/check-note-anchors.ts",
+    "init-board": "npx tsx scripts/build-board.ts --init board.html '工程决策看板'",
+    "bundle-board": "npx tsx scripts/build-board.ts --bundle .agents/notes demo.html '工程决策看板'"
   },
   "devDependencies": {},
   "engines": { "node": ">=22.0.0" }
