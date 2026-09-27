@@ -15,3 +15,10 @@
 4. 提交前跑 `npm run verify-notes`，红了先修再交。
 
 笔记路径即状态：`.agents/notes/{proposed,implemented,rejected,archived}/{feature,bug-fix,simplification,architecture,process,testing}/yyyy-mm-dd-topic.md`。
+
+## 写文档
+
+- 写/改 agent 可见文档（本文件、skill、指针文档）：先读
+  `.agents/skills/writing-for-agents/SKILL.md`
+- 写/改用户可见技术文档（README、docs/）：遵循
+  `.agents/skills/documentation-writer/SKILL.md`（Diátaxis 四象限）
