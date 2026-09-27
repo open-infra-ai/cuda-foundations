@@ -19,7 +19,7 @@ The repository keeps a lightweight changelog focused on release-level milestones
 - README 标题与仓名对齐为 `cuda-foundations`
 - 教学品牌 `CUDA Kernel Academy` 全量并入仓名 `cuda-foundations`：站点标题与 OG/Twitter 元数据、分享图、404 页、文档正文、源码头、示例与 CI 配置统一改名；`LICENSE` 版权行与 README 引用块同步。移除 README / README.zh-CN / ROADMAP 中的品牌声明行，`examples` 的 CMake project 名改为 `cuda_foundations_examples`
 - 中文 README 补齐 IN/OUT；`02-tensorcraft-core` 标明历史模块名而非独立产品
-- `03-hpc-advanced` FlashAttention 教学核与文档标明非权威，指向 `cuflash-attn`
+- `03-hpc-advanced` FlashAttention 教学核与文档标明非权威，指向 `cuflash`
 - 面向用户的 GitHub 链接统一为 `github.com/open-infra-ai/...`
 - Refresh current README and roadmap validation evidence to the complete 261/261 CTest run on RTX 3060 Laptop (sm_86, CUDA 12.0).
 
