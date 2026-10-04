@@ -104,9 +104,11 @@ Status: <状态>
 1. **入口注释（若有）**：代码入口若已有 `// Note: ... 见 .agents/notes/...`，顺着它读。没有就走下面三法，不要为了检索去补锚点。
 2. **分类树物理切片**：不扫全库，按意图直切目录（架构看 `implemented/architecture/`，避坑看 `rejected/`）。
 3. **精准全局检索**：使用 ripgrep 搜关键词或机制名，**必带 `--hidden` 并排除 `archived/`**：
+
    ```bash
    rg --hidden --glob '!.agents/notes/archived/**' "<机制名或关键词>" .agents/notes/
    ```
+
 4. **模块文档下钻**：子模块 README 涉及设计依据时，顺着相对 Markdown 链接直达对应 Note。
 
 **问用户之前，先自己查。** 以上四法能答的事实，不要抛给用户；只有真正的决策才占用用户时间。
@@ -158,11 +160,9 @@ npm run verify-archived            # 归档封印：头部布局、manifest 哈�
 npm run verify-notes               # 以上三线串跑（CI 用这个）
 npm run archive-agent-note <path> [--superseded-by <新笔记>]  # 一键归档；可选在新笔记插入互链 + 入站死链报告
 npm run check-anchors              # 软报告：若代码里有 // Note: 锚点，做双向体检；不当 CI 门
-npm run init-board                 # 生成 ~69KB 轻量看板 board.html（日常开发推荐）
-npm run bundle-board               # 打包内嵌全量数据的自包含 demo.html
 ```
 
-每个脚本都是独立 tsx（`scripts/*.ts`），也可 `npx tsx scripts/xxx.ts` 直接跑在任何目录；参数与免疫规则见 `references/verification.md`。看板要自定义输出路径时用 `npx tsx scripts/build-board.ts --init <目标.html> "名字"` / `--bundle <notes目录> <输出.html> "名字"`。团队可直接抄本仓库的 `.github/workflows/verify-notes.yml`，把 `verify-notes` 接进 CI；并在 `CONTRIBUTING.md` / PR 模板加一句「重要改动必带一篇笔记」。
+每个脚本都是独立 tsx（`scripts/*.ts`），也可 `npx tsx scripts/xxx.ts` 直接运行；参数与免疫规则见 `references/verification.md`。团队可直接复用本仓库的 `.github/workflows/verify-notes.yml`，把 `verify-notes` 接进 CI；并在 `CONTRIBUTING.md` / PR 模板加一句「重要改动必带一篇笔记」。
 
 ## References
 

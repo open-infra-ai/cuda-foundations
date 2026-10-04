@@ -14,7 +14,7 @@ Status: <状态>
 - `implemented` → `Status: implemented`
 - `rejected` → `Status: rejected — <一句话原因>`
 
-标题前必须带 `Agent Note: ` 前缀；状态不含日期与括号；必须与所在 lifecycle 文件夹一致（脚本会交叉核对）。文件名日期是首次提出日，git 承载其余时间信息。
+标题前必须带 `Agent Note:` 前缀；状态不含日期与括号；必须与所在 lifecycle 文件夹一致（脚本会交叉核对）。文件名日期是首次提出日，git 承载其余时间信息。
 
 ## Body 骨架
 

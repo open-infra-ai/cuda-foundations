@@ -4,9 +4,10 @@
  * --superseded-by writes a relative link into the NEW note, never into the archived file.
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { agentNoteRoot, AGENT_NOTE_CLASSES, walkAgentNoteTree } from "./agent-note-tree.ts";
+import { collectArchivedNotes, parseArchiveManifest, validateArchiveSeals, type ArchiveManifest } from "./agent-note-archive-manifest.ts";
 
 const args = process.argv.slice(2);
 const targetArg = args[0];
@@ -50,6 +51,10 @@ if (!AGENT_NOTE_CLASSES.includes(cls as any)) {
   console.error(`Error: unknown class "${cls}"`);
   process.exit(1);
 }
+if (!/^\d{4}-\d{2}-\d{2}-[^/\\]+\.md$/.test(filename) || filename.endsWith(".zh.md")) {
+  console.error(`Error: invalid note filename for archive seal: ${filename}`);
+  process.exit(1);
+}
 
 // 1. Read and update content with Archived line
 const raw = readFileSync(targetPath, "utf8");
@@ -74,7 +79,7 @@ if (successorPath) {
   const rel = relative(agentNoteRoot, successorPath).replace(/\\/g, "/");
   successorRel = rel;
   const successorSegs = rel.split("/");
-  if (successorSegs.length !== 3 || !["proposed", "implemented", "rejected"].includes(successorSegs[0] ?? "")) {
+  if (successorPath === targetPath || successorSegs.length !== 3 || !["proposed", "implemented", "rejected"].includes(successorSegs[0] ?? "") || !AGENT_NOTE_CLASSES.includes(successorSegs[1] as any)) {
     console.error(`Error: --superseded-by target must be an active note in {lifecycle}/{class}/ (got: ${rel})`);
     process.exit(1);
   }
@@ -85,7 +90,6 @@ const updatedContent = lines.join("\n");
 
 // 2. Determine archived destination
 const archivedDir = join(agentNoteRoot, "archived", cls);
-mkdirSync(archivedDir, { recursive: true });
 const archivedPath = join(archivedDir, filename);
 
 if (existsSync(archivedPath)) {
@@ -94,25 +98,30 @@ if (existsSync(archivedPath)) {
   process.exit(1);
 }
 
+// Validate all inputs before changing the source, successor, archive or manifest.
+const manifestPath = join(agentNoteRoot, "archived", "manifest.json");
+let manifest: ArchiveManifest = { version: 1, files: {} };
+try {
+  const archivedFiles = collectArchivedNotes(agentNoteRoot);
+  if (existsSync(manifestPath)) {
+    manifest = parseArchiveManifest(readFileSync(manifestPath, "utf8"));
+  } else if (archivedFiles.length) {
+    throw new Error("archived/manifest.json missing for existing archives; run verify-archived-agent-notes.ts --write before archiving");
+  }
+  validateArchiveSeals(agentNoteRoot, manifest, archivedFiles);
+  validateOutboundLinks(raw, targetPath, archivedPath);
+  if (successorPath) readFileSync(successorPath, "utf8");
+} catch (error) {
+  console.error(`Error: archive preflight failed: ${(error as Error).message}`);
+  process.exit(1);
+}
+
+mkdirSync(archivedDir, { recursive: true });
 writeFileSync(targetPath, updatedContent, "utf8");
 renameSync(targetPath, archivedPath);
 console.log(`Moved: ${relToRoot} -> archived/${cls}/${filename}`);
 
-// 3. Update archived/manifest.json with SHA-256 seal
-const manifestPath = join(agentNoteRoot, "archived", "manifest.json");
-interface Manifest {
-  version: 1;
-  files: Record<string, string>;
-}
-let manifest: Manifest = { version: 1, files: {} };
-if (existsSync(manifestPath)) {
-  try {
-    manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  } catch (e) {
-    console.warn("Warning: existing manifest.json was invalid, creating fresh");
-  }
-}
-
+// 3. Append the new SHA-256 seal, preserving all existing entries.
 const newArchivedRel = `archived/${cls}/${filename}`;
 const sha256 = `sha256:${createHash("sha256").update(readFileSync(archivedPath)).digest("hex")}`;
 manifest.files[newArchivedRel] = sha256;
@@ -163,5 +172,38 @@ if (successorPath && successorRel) {
   if (!newRaw.includes(`archived/${cls}/${filename}`) && !newRaw.includes(relLink)) {
     writeFileSync(successorPath, `${newRaw.replace(/\s*$/, "")}\n\n[历史快照：${oldTitle}](${relLink})\n`, "utf8");
     console.log(`Linked from ${successorRel}: [历史快照：${oldTitle}](${relLink})`);
+  }
+}
+
+function validateOutboundLinks(content: string, source: string, destination: string): void {
+  // Code samples are not links. Complex destinations are rejected rather than rewritten.
+  const prose = content
+    .replace(/^ {0,3}(`{3,})[^`\n]*\n[\s\S]*?^ {0,3}\1`*[ \t]*$/gm, "")
+    .replace(/^ {0,3}(~{3,})[^\n]*\n[\s\S]*?^ {0,3}\1~*[ \t]*$/gm, "");
+  const codeSpans = [...prose.matchAll(/(?<![\\`])(`+)[\s\S]*?(?<!`)\1(?!`)/g)];
+  const outsideCode = (match: RegExpMatchArray) => !codeSpans.some((span) => match.index! >= span.index! && match.index! < span.index! + span[0].length);
+  if (/<(?:a|img)\b/i.test(prose)) throw new Error("unsupported HTML link syntax in note body");
+  const inlineLinks = [...prose.matchAll(/!?\[[^\]\n]*\]\(([^)\n]*)\)/g)].filter(outsideCode);
+  if ([...prose.matchAll(/\]\(/g)].filter(outsideCode).length !== inlineLinks.length) throw new Error("unsupported Markdown link syntax in note body");
+  const targets = inlineLinks.map((match) => match[1].trim());
+  const definitions = [...prose.matchAll(/^ {0,3}\[([^\]\n]+)\]:\s*(.+)$/gm)].filter(outsideCode);
+  const labels = new Set(definitions.map((match) => match[1].toLowerCase()));
+  for (const match of definitions) targets.push(match[2].trim());
+  for (const match of [...prose.matchAll(/\[([^\]\n]+)\]\[([^\]\n]*)\]/g)].filter(outsideCode)) {
+    if (!labels.has((match[2] || match[1]).toLowerCase())) throw new Error(`unresolved reference link: ${match[0]}`);
+  }
+  for (let target of targets) {
+    if (target.startsWith("<") && target.endsWith(">")) target = target.slice(1, -1);
+    if (!target || /[\s()\\`]/.test(target)) throw new Error(`unsupported Markdown link destination: ${target}`);
+    if (/^(?:https?:\/\/|mailto:|#)/i.test(target)) continue;
+    if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("//") || /[?%<>]/.test(target)) {
+      throw new Error(`unsupported Markdown link destination: ${target}`);
+    }
+    const fileTarget = target.split("#")[0];
+    const before = resolve(dirname(source), fileTarget);
+    const after = resolve(dirname(destination), fileTarget);
+    if (!existsSync(before) || !existsSync(after)) throw new Error(`link target missing before or after archive: ${target}`);
+    if (realpathSync(before) !== realpathSync(after)) throw new Error(`link target changes after archive: ${target}`);
+    if (realpathSync(before) === realpathSync(source)) throw new Error(`link points to the source being moved: ${target}`);
   }
 }

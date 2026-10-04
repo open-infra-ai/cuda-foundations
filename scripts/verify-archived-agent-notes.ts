@@ -8,9 +8,10 @@
  */
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { agentNoteRoot } from "./agent-note-tree.ts";
+import { collectArchivedNotes, parseArchiveManifest, validateArchiveSeals, type ArchiveManifest } from "./agent-note-archive-manifest.ts";
 
 const isWrite = process.argv.includes("--write");
 const errors: string[] = [];
@@ -19,18 +20,7 @@ const fail = (msg: string) => { errors.push(msg); };
 
 // --- collect archived files (skip accidental .zh.md)
 const archivedDir = join(agentNoteRoot, "archived");
-const files: string[] = [];
-function scan(dir: string) {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name.startsWith(".")) continue;
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) scan(full);
-    else if (entry.isFile() && entry.name.endsWith(".md") && !entry.name.endsWith(".zh.md")) {
-      files.push(relative(archivedDir, full).split("\\").join("/"));
-    }
-  }
-}
-if (existsSync(archivedDir)) scan(archivedDir);
+const files = collectArchivedNotes(agentNoteRoot).map((key) => key.slice("archived/".length));
 
 // --- head layout: L1 title / L2 blank / L3 Status / L4 Archived / L5 blank
 const TITLE_RE = /^# Agent Note[:：] ?\S/;
@@ -46,16 +36,23 @@ for (const rel of files) {
 
 // --- manifest seals
 const manifestPath = join(archivedDir, "manifest.json");
-interface Manifest { version: 1; files: Record<string, string>; }
-let manifest: Manifest = { version: 1, files: {} };
+let manifest: ArchiveManifest = { version: 1, files: {} };
 if (existsSync(manifestPath)) {
   try {
-    manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  } catch {
-    fail("archived/manifest.json exists but is not valid JSON");
+    manifest = parseArchiveManifest(readFileSync(manifestPath, "utf8"));
+  } catch (error) {
+    console.error(`archived: invalid manifest: ${(error as Error).message}`);
+    process.exit(1);
   }
 } else if (files.length > 0 && !isWrite) {
   fail("archived/manifest.json missing — run with --write to seal existing archived notes");
+}
+
+try {
+  validateArchiveSeals(agentNoteRoot, manifest, files.map((rel) => `archived/${rel}`), isWrite);
+} catch (error) {
+  console.error(`archived: ${(error as Error).message}`);
+  process.exit(1);
 }
 
 const sealOf = (relFromRoot: string) =>
@@ -70,12 +67,7 @@ for (const rel of files) {
     } else {
       fail(`${key} — missing seal in manifest.json (run with --write)`);
     }
-  } else if (entry !== sealOf(key)) {
-    fail(`${key} — seal mismatch: archived note was modified after sealing (frozen notes must never change)`);
   }
-}
-for (const key of Object.keys(manifest.files)) {
-  if (!existsSync(join(agentNoteRoot, key))) fail(`${key} — sealed entry has no file on disk`);
 }
 
 // --- append-only vs git baseline (skipped without git)
@@ -97,14 +89,14 @@ if (repoRoot) {
   }
   if (baselineRaw !== null) {
     try {
-      const baseline = JSON.parse(baselineRaw) as Manifest;
-      for (const [key, seal] of Object.entries(baseline.files ?? {})) {
+      const baseline = parseArchiveManifest(baselineRaw);
+      for (const [key, seal] of Object.entries(baseline.files)) {
         if (manifest.files[key] !== seal) {
           fail(`${key} — seal added/changed/removed relative to ${baseRef}; archived seals are append-only`);
         }
       }
-    } catch {
-      fail(`archived/manifest.json at ${baseRef} was not valid JSON`);
+    } catch (error) {
+      fail(`archived/manifest.json at ${baseRef} is invalid: ${(error as Error).message}`);
     }
   }
 } else {

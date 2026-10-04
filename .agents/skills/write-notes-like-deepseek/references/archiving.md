@@ -23,18 +23,23 @@
 判断是否过时**不看字数多少，也不看存续时间长短**，严格依据「未来防撞护栏价值」：
 
 ### 1.1 活跃区免检保留红线（即使年代久远也必须保留在 `implemented/`）
+
 只要符合以下任一特征，绝对不过时，严禁归档：
+
 - **所有权边界**：明确界定了模块调用权限与架构职责划分（如"UI 层严禁直接直连 DB"）。
 - **否定性保证（Negative Guarantees）**：明确承诺"绝不提供某项能力"或"永不向后兼容某旧协议"。
 - **安全与合规底线**：防止注入、鉴权绕过或数据泄露的刚性约束。
 - **易复踩的被否决方案（Alternatives considered）**：记录了极具诱惑力但在实践中已被证明会导致死锁/崩溃的错误路线。
 
 ### 1.2 归档标准（移入 `archived/`）
+
 仅对 `implemented/` 中满足以下条件的记录执行归档：
+
 - **被新架构完全取代但仍有独立杠杆**：后续 Note 已吸收核心逻辑，旧篇还留着否定性保证 / 所有权边界 / 重新引入条件——归档，互链写在新笔记。能删则删，见 `references/when-to-write.md` §4。
 - **一次性设计与窄细节**：一次性 UI 边距调整、已废弃平台的狭窄单点适配器、已彻底闭环的简单 bug 修补。
 
 ### 1.3 垃圾清理规则（不进归档树）
+
 - **`proposed/` 绝不归档**：前提消失（如依赖升级自带该能力）或不再推进的提案，直接转为 `Status: rejected — <一句话原因>`；已在其他方案中吸收的直接关闭。
 - **无价值 `rejected/` 物理删除**：若被否决方案所依赖的旧技术/API 已被彻底移除，未来 Agent 绝无可能再提出该错误路线，直接将文件物理删除，不留冗余。
 
@@ -77,6 +82,7 @@ npx tsx scripts/archive-agent-note.ts \
 CLI 依次完成：
 
 1. **写头部标记**：`Archived: YYYY-MM-DD` **紧邻** `Status: implemented` 插入（L3/L4 之间不留空行——这是与 DSH 原版对齐的硬契约，封印校验器逐行核对）：
+
    ```markdown
    # Agent Note: xxx
 
@@ -86,6 +92,7 @@ CLI 依次完成：
    ## Problem
    ...
    ```
+
 2. **物理移动**：`implemented/<class>/...` → `archived/<class>/...`（git 场景建议用 `git mv` 保留历史，CLI 用文件移动实现，无 git 同样工作）。
 3. **封印入 `archived/manifest.json`**：记录该文件的 SHA-256。封印后任何对归档内容的篡改都会被 `verify-archived` 报警。
 4. **入站死链报告**：扫描活跃笔记里指向该笔记的 Markdown 相对链接（精确链接解析，非文本子串），列出需人工修复的清单。
@@ -101,6 +108,7 @@ CLI 依次完成：
 ## 3. 永久冻结契约（Frozen Immutable Contract）
 
 一旦进入 `archived/`：
+
 - **永久只读**：严禁编辑、翻译、重排版、更新、移动或删除。
 - **机械强制**：`verify-archived` 校验头部布局、manifest 哈希、以及封印的 append-only（有 git 时与基线 ref 对比，`AGENT_NOTE_ARCHIVE_BASE_REF` 可指定基线，默认 HEAD；无 git 自动降级为哈希自校验并提示）。封印只增不改，已封印条目被改动或删除即报错。
 - **免除日常扫描**：`verify-agent-note-tree` 和 `verify-agent-note-format` 默认跳过 `archived/` 目录，归档文件的出站链接失效不会阻塞日常构建。

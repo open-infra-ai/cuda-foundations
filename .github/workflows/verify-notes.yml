@@ -34,3 +34,4 @@ jobs:
           npx tsx scripts/verify-agent-note-tree.ts
           npx tsx scripts/verify-agent-note-format.ts
           npx tsx scripts/verify-archived-agent-notes.ts
+          npx tsx --test scripts/test-agent-note-archive.ts
