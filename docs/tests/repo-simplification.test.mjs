@@ -12,6 +12,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..', '..')
 
 const guidanceFiles = [
+  'AGENTS.md',
   'README.md',
   'README.zh-CN.md',
   'CONTRIBUTING.md',
@@ -49,15 +50,14 @@ test('repository guidance drops AI process-framework language', async () => {
   )
 })
 
-test('tracked repo surface keeps one root changelog and no AI control scaffolding', async () => {
+test('tracked repo surface keeps one root changelog and no obsolete AI scaffolding', async () => {
   const { stdout } = await execFileAsync('git', ['ls-files'], { cwd: repoRoot })
   const trackedFiles = stdout.trim().split('\n').filter(Boolean)
   const existingTrackedFiles = trackedFiles.filter((file) => existsSync(path.join(repoRoot, file)))
 
   const trackedChangelogs = existingTrackedFiles.filter((file) => /(^|\/)CHANGELOG\.md$/.test(file))
   const trackedFrameworkArtifacts = existingTrackedFiles.filter((file) =>
-    file === 'AGENTS.md'
-    || file === 'CLAUDE.md'
+    file === 'CLAUDE.md'
     || file === '.github/copilot-instructions.md'
     || file === '.devin/config.local.json'
     || file === '.github/workflows/copilot-setup-steps.yml'
@@ -73,6 +73,24 @@ test('tracked repo surface keeps one root changelog and no AI control scaffoldin
   assert.deepStrictEqual(
     trackedFrameworkArtifacts,
     [],
-    `Expected AI control scaffolding to be removed, found:\n${trackedFrameworkArtifacts.join('\n')}`
+    `Expected obsolete AI scaffolding to be removed, found:\n${trackedFrameworkArtifacts.join('\n')}`
   )
+})
+
+test('agent guidance points to shipped local decision-note tooling', async () => {
+  const guidance = await readFile(path.join(repoRoot, 'AGENTS.md'), 'utf8')
+  for (const skill of ['write-notes-like-deepseek', 'writing-for-agents', 'documentation-writer']) {
+    const relativePath = `.agents/skills/${skill}/SKILL.md`
+    assert.ok(guidance.includes(relativePath), `Missing guidance pointer: ${relativePath}`)
+    assert.ok(existsSync(path.join(repoRoot, relativePath)), `Unshipped skill: ${relativePath}`)
+  }
+  assert.match(guidance, /npm run verify-notes/)
+  const config = JSON.parse(await readFile(path.join(repoRoot, 'package.json'), 'utf8'))
+  for (const script of [
+    'verify-agent-note-tree.ts', 'verify-agent-note-format.ts',
+    'verify-archived-agent-notes.ts', 'test-agent-note-archive.ts'
+  ]) {
+    assert.ok(config.scripts['verify-notes'].includes(script), `Missing notes gate: ${script}`)
+    assert.ok(existsSync(path.join(repoRoot, 'scripts', script)), `Unshipped notes gate: ${script}`)
+  }
 })

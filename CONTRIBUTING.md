@@ -84,10 +84,13 @@ Keep the summary concrete, list the commands you ran, and call out any GPU-only 
 
 ## Code and documentation rules
 
-- follow `docs/CODING_STYLE.md` and `.clang-format`
+- follow `.clang-format` and existing conventions
 - use existing helpers before adding new abstractions
 - update docs in the same change when commands, behavior, or workflow change
 - prefer deleting stale material over adding another layer of explanation beside it
+- non-trivial changes (behavior, architecture, cross-file contracts, process/tooling,
+  testing strategy) carry an Agent Note under `.agents/notes/` (see `AGENTS.md`);
+  `npm run verify-notes` must be green
 
 ## Pull requests
 

@@ -1,0 +1,37 @@
+name: Verify Agent Notes
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Verify note tree, format, and archive seals
+        env:
+          # HEAD is a no-op on a clean checkout. Compare against the pre-change
+          # commit: PR base, or the previous tip of the pushed branch.
+          # A new-branch push sends before=0000…; git show fails and the script
+          # skips append-only (seal-vs-disk still runs).
+          AGENT_NOTE_ARCHIVE_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          npx tsx scripts/verify-agent-note-tree.ts
+          npx tsx scripts/verify-agent-note-format.ts
+          npx tsx scripts/verify-archived-agent-notes.ts
+          npx tsx --test scripts/test-agent-note-archive.ts

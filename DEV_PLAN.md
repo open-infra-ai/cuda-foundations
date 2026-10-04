@@ -298,9 +298,9 @@
 | 顺序 | 仓库 | 目标 | 完成证据 |
 |---|---|---|---|
 | 1 | `trifuse` | Triton 算子、在线 softmax、输入契约 | Triton vs PyTorch/NumPy 一致 |
-| 2 | `cuflash-attn` | FlashAttention 前后向、数值稳定性、性能分析 | 多精度与 causal 正确性测试 |
+| 2 | `cuflash` | FlashAttention 前后向、数值稳定性、性能分析 | 多精度与 causal 正确性测试 |
 | 3 | `tiny-llm` | 模型加载、Tensor、算子编排、采样、token 生成 | 真实模型端到端生成 token |
-| 4 | `paged-infer` | Paged KV、continuous batching、限流、取消、指标 | 并发请求资源守恒测试 |
+| 4 | `paged-serving` | Paged KV、continuous batching、限流、取消、指标 | 并发请求资源守恒测试 |
 
 ### 模型推理部署加速岗位的额外清单（与仓库无关）
 
@@ -329,7 +329,7 @@
 3. `scripts/run_benchmarks.sh` 可一键采集基准。
 4. `docs/en/benchmarks/` 中只有实测数据，无未标注的占位数字。
 5. README/ROADMAP/CHANGELOG 明确说明仓库处于维护模式，不再新增模块。
-6. 后续精力投入 `tiny-llm` 与 `paged-infer`，而不是继续扩写本仓库。
+6. 后续精力投入 `tiny-llm` 与 `paged-serving`，而不是继续扩写本仓库。
 
 完成后，这个仓库在求职中的定位就是：**一个能证明你“能把 CUDA kernel 写对、测对、说清楚”的基础教学作品**，
-而真正的“推理部署加速”项目证据由 `tiny-llm` 和 `paged-infer` 承担。
+而真正的“推理部署加速”项目证据由 `tiny-llm` 和 `paged-serving` 承担。

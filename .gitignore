@@ -130,3 +130,6 @@ coverage/
 valgrind-out.*
 
 .worktrees/
+
+# CTest residue (running tests creates Testing/ next to the test binary)
+Testing/
