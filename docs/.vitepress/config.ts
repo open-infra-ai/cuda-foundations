@@ -28,7 +28,7 @@ export default withMermaid(defineConfig({
   head: [
     ['meta', { name: 'description', content: 'Systematic CUDA kernel engineering from SGEMM fundamentals to reusable inference components' }],
     ['meta', { name: 'keywords', content: 'CUDA, kernel, SGEMM, GEMM, Tensor Core, FlashAttention, inference engine, GPU programming' }],
-    ['meta', { name: 'author', content: 'LessUp' }],
+    ['meta', { name: 'author', content: 'holtwood' }],
     ['meta', { name: 'theme-color', content: '#76B900' }],
     ['meta', { property: 'og:title', content: 'cuda-foundations' }],
     ['meta', { property: 'og:description', content: 'Systematic CUDA kernel engineering from SGEMM fundamentals to reusable inference components' }],
