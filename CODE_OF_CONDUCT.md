@@ -59,8 +59,8 @@ representative at an online or offline event.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at
-**[github@lessup.dev](mailto:github@lessup.dev)** or by opening a private report via [GitHub Security Advisories](https://github.com/open-infra-ai/cuda-foundations/security/advisories/new).
+reported to the community leaders responsible for enforcement by contacting
+the maintainer via **[GitHub](https://github.com/holtwood)** or by opening a private report via [GitHub Security Advisories](https://github.com/open-infra-ai/cuda-foundations/security/advisories/new).
 
 All complaints will be reviewed and investigated promptly and fairly.
 

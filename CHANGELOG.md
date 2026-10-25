@@ -14,6 +14,7 @@ The repository keeps a lightweight changelog focused on release-level milestones
 - Update ECharts, Mermaid, and compatible transitive dependencies to patched releases; the remaining audit findings are confined to the VitePress 1.x toolchain, which has no stable compatible fix yet.
 - Document how to diagnose and temporarily bypass a Linux `libcuda.so.1` shadowing the Windows-projected CUDA driver in WSL.
 - `scripts/run_benchmarks.sh` pins the working directory of every step, so `roofline_data_*.csv` lands in `01-sgemm-tutorial/` instead of whichever directory the script was invoked from.
+- CODE_OF_CONDUCT enforcement contact: the retired personal-domain email is replaced with the maintainer's GitHub profile, so the reporting channel stays verifiable after the account rename.
 
 ### Changed
 - README 标题与仓名对齐为 `cuda-foundations`
